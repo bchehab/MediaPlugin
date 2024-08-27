@@ -1,0 +1,50 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net8.0-android;net8.0-ios;net8.0-maccatalyst</TargetFrameworks>
+		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.22621.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<UseMaui>true</UseMaui>
+		<SingleProject>true</SingleProject>
+		<MauiVersion>8.0.3</MauiVersion>
+
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">14.2</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">14.2</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+
+		<!--<DefineConstants Condition="$(TargetFramework.Contains('ios')) OR $(TargetFramework.Contains('maccatalyst'))">$(DefineConstants);MACIOS</DefineConstants>-->
+		<DefineConstants Condition="$(TargetFramework.Contains('ios'))">$(DefineConstants);MACIOS</DefineConstants>
+	</PropertyGroup>
+
+	<ItemGroup Condition="!$(TargetFramework.Contains('android'))">
+		<Compile Remove="**\**\*.Android.cs" />
+		<None Include="**\**\*.Android.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
+
+		<Compile Remove="**\**\Android\**\*.cs" />
+		<None Include="**\**\Android\**\*.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
+	</ItemGroup>
+
+	<ItemGroup Condition="!$(TargetFramework.Contains('ios')) AND !$(TargetFramework.Contains('maccatalyst'))">
+		<Compile Remove="**\**\*.MaciOS.cs" />
+		<None Include="**\**\*.MaciOS.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
+
+		<Compile Remove="**\**\MaciOS\**\*.cs" />
+		<None Include="**\**\MaciOS\**\*.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
+	</ItemGroup>
+
+	<ItemGroup Condition="!$(TargetFramework.Contains('windows'))">
+		<Compile Remove="**\**\*.Windows.cs" />
+		<None Include="**\**\*.Windows.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
+
+		<Compile Remove="**\**\Windows\**\*.cs" />
+		<None Include="**\**\Windows\**\*.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+	</ItemGroup>
+
+</Project>

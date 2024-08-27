@@ -1,0 +1,33 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35201.131
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MPowerKit.MediaPlugin", "MPowerKit.MediaPlugin\MPowerKit.MediaPlugin.csproj", "{7583FC51-175E-4675-8C3D-998598FF2629}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sample", "Sample\Sample.csproj", "{EFAC1346-FDEC-4FE2-B426-1B6C53989FDC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7583FC51-175E-4675-8C3D-998598FF2629}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7583FC51-175E-4675-8C3D-998598FF2629}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7583FC51-175E-4675-8C3D-998598FF2629}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7583FC51-175E-4675-8C3D-998598FF2629}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EFAC1346-FDEC-4FE2-B426-1B6C53989FDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EFAC1346-FDEC-4FE2-B426-1B6C53989FDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EFAC1346-FDEC-4FE2-B426-1B6C53989FDC}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{EFAC1346-FDEC-4FE2-B426-1B6C53989FDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EFAC1346-FDEC-4FE2-B426-1B6C53989FDC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EFAC1346-FDEC-4FE2-B426-1B6C53989FDC}.Release|Any CPU.Deploy.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0E16BA56-E7FF-4223-A288-A516CBF1A2F4}
+	EndGlobalSection
+EndGlobal

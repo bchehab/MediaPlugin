@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="Sample.MainPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="30,0"
+                             Spacing="5">
+            <Button Clicked="Button_Clicked"
+                    HorizontalOptions="Fill"
+                    Text="Take Photo" />
+
+            <Button Clicked="Button_Clicked_1"
+                    HorizontalOptions="Fill"
+                    Text="Take Video" />
+
+            <Button Clicked="Button_Clicked_2"
+                    HorizontalOptions="Fill"
+                    Text="Pick Photo" />
+
+            <Button Clicked="Button_Clicked_3"
+                    HorizontalOptions="Fill"
+                    Text="Pick Photos" />
+
+            <Button Clicked="Button_Clicked_4"
+                    HorizontalOptions="Fill"
+                    Text="Pick Video" />
+
+            <VerticalStackLayout x:Name="stack">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate>
+                        <Image HeightRequest="50"
+                               Source="{Binding Path}" />
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>
