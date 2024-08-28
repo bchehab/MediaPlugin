@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
-
 using Foundation;
 
 using ImageIO;
@@ -27,7 +26,7 @@ public class State
 /// <summary>
 /// Implementation for Media
 /// </summary>
-public partial class MediaImplementation : PHPickerViewControllerDelegate, IMedia
+public partial class MediaImplementation : IMedia
 {
     protected const string IllegalCharacters = "[|\\?*<\":>/']";
 
@@ -42,12 +41,12 @@ public partial class MediaImplementation : PHPickerViewControllerDelegate, IMedi
     /// <summary>
     /// image type
     /// </summary>
-    protected const string TypeImage = "public.image";
+    public const string TypeImage = "public.image";
 
     /// <summary>
     /// movie type
     /// </summary>
-    protected const string TypeMovie = "public.movie";
+    public const string TypeMovie = "public.movie";
 
     /// <summary>
     /// Color of the status bar
@@ -139,7 +138,7 @@ public partial class MediaImplementation : PHPickerViewControllerDelegate, IMedi
 
         List<string> permissionsToCheck = [nameof(Permissions.Camera)];
 
-        await CheckPermissions([.. permissionsToCheck]);
+        await CheckPermissions([..permissionsToCheck]);
 
         var medias = await GetMediasAsync(true, request, null, token);
 
@@ -180,7 +179,7 @@ public partial class MediaImplementation : PHPickerViewControllerDelegate, IMedi
 
         List<string> permissionsToCheck = [nameof(Permissions.Camera), nameof(Permissions.Microphone)];
 
-        await CheckPermissions([.. permissionsToCheck]);
+        await CheckPermissions([..permissionsToCheck]);
 
         var medias = await GetMediasAsync(false, request, null, token);
 
@@ -211,70 +210,77 @@ public partial class MediaImplementation : PHPickerViewControllerDelegate, IMedi
 
         try
         {
-            token.Register(() =>
+            try
             {
-                State.Controller?.DismissViewController(true, null);
-            });
-
-            var vc = Platform.GetCurrentUIViewController()!;
-
-            if (request is PickRequest)
-            {
-                PHPickerConfiguration config = new()
+                token.Register(() =>
                 {
-                    SelectionLimit = pickerOptions?.MaximumImagesCount ?? 1,
-                    Filter = isPhoto ? PHPickerFilter.ImagesFilter : PHPickerFilter.VideosFilter,
-                };
+                    State.Controller?.DismissViewController(true, null);
+                });
 
-                State.Controller = new PHPickerViewController(config)
-                {
-                    Delegate = this,
-                };
+                var vc = Platform.GetCurrentUIViewController()!;
 
-                if (DeviceInfo.Idiom == DeviceIdiom.Tablet)
+                if (request is PickRequest)
                 {
-                    State.Controller.ModalPresentationStyle =
-                        request?.ModalPresentationStyle is MediaPickerModalPresentationStyle.OverFullScreen
-                        ? UIModalPresentationStyle.Popover
-                        : UIModalPresentationStyle.FullScreen;
+                    PHPickerConfiguration config = new()
+                    {
+                        SelectionLimit = pickerOptions?.MaximumImagesCount ?? 1,
+                        Filter = isPhoto ? PHPickerFilter.ImagesFilter : PHPickerFilter.VideosFilter,
+                    };
+
+                    State.Controller = new PHPickerViewController(config)
+                    {
+                        Delegate = new PHPickerDelegate(State),
+                    };
+
+                    if (DeviceInfo.Idiom == DeviceIdiom.Tablet)
+                    {
+                        State.Controller.ModalPresentationStyle =
+                            request?.ModalPresentationStyle is MediaPickerModalPresentationStyle.OverFullScreen
+                            ? UIModalPresentationStyle.Popover
+                            : UIModalPresentationStyle.FullScreen;
+
+                        if (State.Controller.PopoverPresentationController != null)
+                        {
+                            State.Controller.PopoverPresentationController.SourceView = vc.View!;
+                        }
+                    }
+                }
+                else
+                {
+                    var captureRequest = (request as CaptureRequest)!;
+
+                    State.Controller = new UIImagePickerController
+                    {
+                        SourceType = UIImagePickerControllerSourceType.Camera,
+                        AllowsEditing = false,
+                        MediaTypes = [isPhoto ? TypeImage : TypeMovie],
+                        CameraDevice = GetUICameraDevice(captureRequest.DefaultCamera),
+                        Delegate = new PhotoPickerDelegate(State, captureRequest),
+                        CameraCaptureMode = isPhoto ? UIImagePickerControllerCameraCaptureMode.Photo : UIImagePickerControllerCameraCaptureMode.Video
+                    };
 
                     if (State.Controller.PopoverPresentationController != null)
                     {
                         State.Controller.PopoverPresentationController.SourceView = vc.View!;
                     }
                 }
+
+                ConfigureController(State.Controller, State);
+
+                await vc.PresentViewControllerAsync(State.Controller, true);
             }
-            else
+            catch (Exception ex)
             {
-                var captureRequest = (request as CaptureRequest)!;
-
-                State.Controller = new UIImagePickerController
-                {
-                    SourceType = UIImagePickerControllerSourceType.Camera,
-                    AllowsEditing = false,
-                    CameraDevice = GetUICameraDevice(captureRequest.DefaultCamera),
-                    Delegate = new PhotoPickerDelegate(State, captureRequest),
-                    CameraCaptureMode = isPhoto ? UIImagePickerControllerCameraCaptureMode.Photo : UIImagePickerControllerCameraCaptureMode.Video
-                };
+                tcs.SetException(ex);
             }
-
-            ConfigureController(State.Controller, State);
-
-            await vc.PresentViewControllerAsync(State.Controller, true);
 
             return await tcs.Task;
-        }
-        catch (Exception ex)
-        {
-            tcs.SetException(ex);
         }
         finally
         {
             State.Controller?.Dispose();
             State = null;
         }
-
-        return await tcs.Task;
     }
 
     protected virtual void ConfigureController(UIViewController controller, State state)
@@ -402,20 +408,44 @@ public class PHPickerDelegate : PHPickerViewControllerDelegate
         }
 
         List<MediaFile> files = new(results.Length);
-        foreach (var res in results)
+        try
         {
-            var provider = res.ItemProvider;
-
-            var identifier = GetIdentifier(provider.RegisteredTypeIdentifiers);
-            if (identifier is null) continue;
-
-            if (provider.HasItemConformingTo(identifier))
+            foreach (var res in results)
             {
+                var provider = res.ItemProvider;
+
+                string? type = provider.HasItemConformingTo(MediaImplementation.TypeImage)
+                    ? MediaImplementation.TypeImage
+                    : (provider.HasItemConformingTo(MediaImplementation.TypeMovie)
+                        ? MediaImplementation.TypeMovie
+                        : null);
+
+                if (type is null) continue;
+
                 try
                 {
-                    if (await provider.LoadItemAsync(identifier, null) is not NSUrl url) continue;
+                    var localTcs = new TaskCompletionSource<string>();
+                    provider.LoadFileRepresentation(type, (url, err) =>
+                    {
+                        if (err is not null)
+                        {
+                            localTcs.SetException(new NSErrorException(err));
+                            return;
+                        }
 
-                    var path = url!.Path!;
+                        var newPath = GetUniquePath(FileSystem.Current.AppDataDirectory, url.LastPathComponent!, true);
+
+                        using var rs = File.OpenRead(url.Path!);
+                        using var ws = File.OpenWrite(newPath);
+                        rs.CopyTo(ws);
+
+                        localTcs.SetResult(newPath);
+                    });
+
+                    var path = await localTcs.Task;
+
+                    var url = NSUrl.FromFilename(path);
+
                     var mediaFile = new MediaFile(path, () => File.OpenRead(path), null, url.AbsoluteString, url.LastPathComponent);
                     files.Add(mediaFile);
                 }
@@ -426,8 +456,16 @@ public class PHPickerDelegate : PHPickerViewControllerDelegate
                 }
             }
         }
+        finally
+        {
+            picker.DismissViewController(true, null);
+        }
 
-        State!.Tcs.TrySetResult(files);
+        if (files.Count == 0)
+        {
+            State!.Tcs.TrySetCanceled();
+        }
+        else State!.Tcs.TrySetResult(files);
     }
 
     protected virtual string? GetIdentifier(string[] identifiers)
@@ -438,6 +476,21 @@ public class PHPickerDelegate : PHPickerViewControllerDelegate
         if (identifiers.Contains(UTType.QuickTimeMovie))
             return identifiers.FirstOrDefault(i => i == UTType.QuickTimeMovie);
         return identifiers.FirstOrDefault();
+    }
+
+    protected static string GetUniquePath(string folder, string name, bool isPhoto)
+    {
+        var ext = Path.GetExtension(name);
+        if (string.IsNullOrWhiteSpace(ext)) ext = isPhoto ? ".jpg" : ".mp4";
+
+        name = Path.GetFileNameWithoutExtension(name);
+
+        var nname = name + ext;
+        var i = 1;
+        while (File.Exists(Path.Combine(folder, nname)))
+            nname = name + "_" + i++ + ext;
+
+        return Path.Combine(folder, nname);
     }
 }
 
@@ -506,7 +559,7 @@ public class PhotoPickerDelegate : UIImagePickerControllerDelegate
     {
         picker.DismissViewController(true, null);
 
-        State.Tcs?.TrySetCanceled();
+        State.Tcs?.SetCanceled();
     }
 
     protected virtual MediaFile? ConvertPickerResults(NSDictionary info)
@@ -538,7 +591,7 @@ public class PhotoPickerDelegate : UIImagePickerControllerDelegate
 
     protected virtual string? GetOriginalName(NSDictionary info)
     {
-        if (PHPhotoLibrary.AuthorizationStatus != PHAuthorizationStatus.Authorized
+        if (PHPhotoLibrary.GetAuthorizationStatus(PHAccessLevel.ReadWrite) != PHAuthorizationStatus.Authorized
             || !info.ContainsKey(UIImagePickerController.PHAsset))
             return null;
 
@@ -572,7 +625,6 @@ public class PhotoPickerDelegate : UIImagePickerControllerDelegate
         var path = string.IsNullOrWhiteSpace(Request.DesiredDirectory)
             ? FileSystem.Current.AppDataDirectory
             : Path.Combine(FileSystem.Current.AppDataDirectory, Request.DesiredDirectory);
-
 
         var fullPath = GetUniquePath(path, Request.DesiredName, isPhoto);
 

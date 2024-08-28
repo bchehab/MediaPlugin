@@ -7,6 +7,8 @@ public partial class MainPage
     public MainPage()
     {
         InitializeComponent();
+
+        //img.Source = "/Users/mac/Library/Developer/CoreSimulator/Devices/E0439A11-AB9A-4D30-A0BF-2008CCAABF18/data/Containers/Shared/AppGroup/8C2E15C4-28A8-4D9F-A19B-B1812D237B90/File Provider Storage/photospicker/uuid=CC95F08C-88C3-4012-9D6D-64A413D254B3&library=1&type=1&mode=2&loc=true&cap=true.jpeg";
     }
 
     private async void Button_Clicked(object sender, EventArgs e)

@@ -15,8 +15,8 @@
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 
-		<!--<DefineConstants Condition="$(TargetFramework.Contains('ios')) OR $(TargetFramework.Contains('maccatalyst'))">$(DefineConstants);MACIOS</DefineConstants>-->
-		<DefineConstants Condition="$(TargetFramework.Contains('ios'))">$(DefineConstants);MACIOS</DefineConstants>
+		<DefineConstants Condition="$(TargetFramework.Contains('ios')) OR $(TargetFramework.Contains('maccatalyst'))">$(DefineConstants);MACIOS</DefineConstants>
+		<!--<DefineConstants Condition="$(TargetFramework.Contains('ios'))">$(DefineConstants);MACIOS</DefineConstants>-->
 	</PropertyGroup>
 
 	<ItemGroup Condition="!$(TargetFramework.Contains('android'))">
