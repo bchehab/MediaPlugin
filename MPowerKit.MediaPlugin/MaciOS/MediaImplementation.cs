@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Text.RegularExpressions;
 using Foundation;
 
 using ImageIO;
@@ -26,13 +24,8 @@ public class State
 /// <summary>
 /// Implementation for Media
 /// </summary>
-public partial class MediaImplementation : IMedia
+public class MediaImplementation : IMedia
 {
-    protected const string IllegalCharacters = "[|\\?*<\":>/']";
-
-    [GeneratedRegex(IllegalCharacters)]
-    private static partial Regex IllegalCharactersRegex();
-
     protected const string CameraDescription = "NSCameraUsageDescription";
     protected const string PhotoDescription = "NSPhotoLibraryUsageDescription";
     protected const string PhotoAddDescription = "NSPhotoLibraryAddUsageDescription";
@@ -93,10 +86,8 @@ public partial class MediaImplementation : IMedia
         }
     }
 
-    /// <summary>
-    /// Picks a photo from the default gallery
-    /// </summary>
-    /// <returns>Media file or null if canceled</returns>
+    public virtual Task<bool> Initialize() => Task.FromResult(true);
+
     public async Task<MediaFile?> PickPhotoAsync(PickRequest? request = null, CancellationToken token = default)
     {
         if (!IsPickPhotoSupported) throw new NotSupportedException();
@@ -121,11 +112,6 @@ public partial class MediaImplementation : IMedia
         return GetMediasAsync(true, request, multiOptions, token);
     }
 
-    /// <summary>
-    /// Take a photo async with specified options
-    /// </summary>
-    /// <param name="options">Camera Media Options</param>
-    /// <returns>Media file of photo or null if canceled</returns>
     public async Task<MediaFile?> TakePhotoAsync(CaptureRequest? request = null, CancellationToken token = default)
     {
         if (!IsTakeVideoSupported || !IsCameraAvailable) throw new NotSupportedException();
@@ -134,11 +120,11 @@ public partial class MediaImplementation : IMedia
 
         request ??= new CaptureRequest();
 
-        VerifyCaptureRequest(request);
+        request.VerifyCaptureRequest();
 
         List<string> permissionsToCheck = [nameof(Permissions.Camera)];
 
-        await CheckPermissions([..permissionsToCheck]);
+        await CheckPermissions([.. permissionsToCheck]);
 
         var medias = await GetMediasAsync(true, request, null, token);
 
@@ -147,10 +133,6 @@ public partial class MediaImplementation : IMedia
         return media;
     }
 
-    /// <summary>
-    /// Picks a video from the default gallery
-    /// </summary>
-    /// <returns>Media file of video or null if canceled</returns>
     public async Task<MediaFile?> PickVideoAsync(VideoPickRequest? request = null, CancellationToken token = default)
     {
         if (!IsPickVideoSupported) throw new NotSupportedException();
@@ -162,11 +144,6 @@ public partial class MediaImplementation : IMedia
         return medias?.FirstOrDefault();
     }
 
-    /// <summary>
-    /// Take a video with specified options
-    /// </summary>
-    /// <param name="options">Video Media Options</param>
-    /// <returns>Media file of new video or null if canceled</returns>
     public async Task<MediaFile?> TakeVideoAsync(CaptureRequest? request = null, CancellationToken token = default)
     {
         if (!IsTakeVideoSupported || !IsCameraAvailable) throw new NotSupportedException();
@@ -175,11 +152,11 @@ public partial class MediaImplementation : IMedia
 
         request ??= new CaptureRequest();
 
-        VerifyCaptureRequest(request);
+        request.VerifyCaptureRequest();
 
         List<string> permissionsToCheck = [nameof(Permissions.Camera), nameof(Permissions.Microphone)];
 
-        await CheckPermissions([..permissionsToCheck]);
+        await CheckPermissions([.. permissionsToCheck]);
 
         var medias = await GetMediasAsync(false, request, null, token);
 
@@ -252,7 +229,7 @@ public partial class MediaImplementation : IMedia
                     State.Controller = new UIImagePickerController
                     {
                         SourceType = UIImagePickerControllerSourceType.Camera,
-                        AllowsEditing = false,
+                        AllowsEditing = true,
                         MediaTypes = [isPhoto ? TypeImage : TypeMovie],
                         CameraDevice = GetUICameraDevice(captureRequest.DefaultCamera),
                         Delegate = new PhotoPickerDelegate(State, captureRequest),
@@ -287,20 +264,6 @@ public partial class MediaImplementation : IMedia
     {
         if (controller.PresentationController is not null)
             controller.PresentationController.Delegate = new PresentatControllerDelegate(state);
-    }
-
-    protected virtual void VerifyCaptureRequest(CaptureRequest request)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        if (Path.IsPathRooted(request.DesiredDirectory))
-            throw new ArgumentException("options.Directory must be a relative path", nameof(request));
-
-        if (!string.IsNullOrWhiteSpace(request.DesiredName))
-            request.DesiredName = IllegalCharactersRegex().Replace(request.DesiredName, string.Empty).Replace(@"\", string.Empty);
-
-        if (!string.IsNullOrWhiteSpace(request.DesiredDirectory))
-            request.DesiredDirectory = IllegalCharactersRegex().Replace(request.DesiredDirectory, string.Empty).Replace(@"\", string.Empty);
     }
 
     protected static UIImagePickerControllerCameraDevice GetUICameraDevice(CameraDevice device)
@@ -433,7 +396,7 @@ public class PHPickerDelegate : PHPickerViewControllerDelegate
                             return;
                         }
 
-                        var newPath = GetUniquePath(FileSystem.Current.AppDataDirectory, url.LastPathComponent!, true);
+                        var newPath = MediaExtensions.GetUniquePath(FileSystem.Current.AppDataDirectory, url.LastPathComponent!, true);
 
                         using var rs = File.OpenRead(url.Path!);
                         using var ws = File.OpenWrite(newPath);
@@ -476,21 +439,6 @@ public class PHPickerDelegate : PHPickerViewControllerDelegate
         if (identifiers.Contains(UTType.QuickTimeMovie))
             return identifiers.FirstOrDefault(i => i == UTType.QuickTimeMovie);
         return identifiers.FirstOrDefault();
-    }
-
-    protected static string GetUniquePath(string folder, string name, bool isPhoto)
-    {
-        var ext = Path.GetExtension(name);
-        if (string.IsNullOrWhiteSpace(ext)) ext = isPhoto ? ".jpg" : ".mp4";
-
-        name = Path.GetFileNameWithoutExtension(name);
-
-        var nname = name + ext;
-        var i = 1;
-        while (File.Exists(Path.Combine(folder, nname)))
-            nname = name + "_" + i++ + ext;
-
-        return Path.Combine(folder, nname);
     }
 }
 
@@ -583,7 +531,7 @@ public class PhotoPickerDelegate : UIImagePickerControllerDelegate
 
             path = assetUrl!.Path!;
 
-            return new MediaFile(path, () => File.OpenRead(path), null, assetUrl!.AbsoluteString, Request.DesiredName);
+            return new MediaFile(path, () => File.OpenRead(path), null, assetUrl!.AbsoluteString, assetUrl.LastPathComponent);
         }
 
         return null;
@@ -616,35 +564,12 @@ public class PhotoPickerDelegate : UIImagePickerControllerDelegate
         image.Dispose();
         metadata.Dispose();
 
-        if (string.IsNullOrWhiteSpace(Request.DesiredName))
-        {
-            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
-            Request.DesiredName = isPhoto ? $"IMG_{timestamp}.jpg" : $"VID_{timestamp}.mp4";
-        }
+        string fullPath = MediaExtensions.GetDesiredPath(Request.DesiredDirectory, Request.DesiredName, isPhoto);
 
-        var path = string.IsNullOrWhiteSpace(Request.DesiredDirectory)
-            ? FileSystem.Current.AppDataDirectory
-            : Path.Combine(FileSystem.Current.AppDataDirectory, Request.DesiredDirectory);
+        var url = NSUrl.FromFilename(fullPath);
 
-        var fullPath = GetUniquePath(path, Request.DesiredName, isPhoto);
+        destData!.Save(url, true);
 
-        destData!.Save(fullPath, true);
-
-        return NSUrl.FromFilename(fullPath);
-    }
-
-    protected static string GetUniquePath(string folder, string name, bool isPhoto)
-    {
-        var ext = Path.GetExtension(name);
-        if (string.IsNullOrWhiteSpace(ext)) ext = isPhoto ? ".jpg" : ".mp4";
-
-        name = Path.GetFileNameWithoutExtension(name);
-
-        var nname = name + ext;
-        var i = 1;
-        while (File.Exists(Path.Combine(folder, nname)))
-            nname = name + "_" + i++ + ext;
-
-        return Path.Combine(folder, nname);
+        return url;
     }
 }

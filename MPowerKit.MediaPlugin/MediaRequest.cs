@@ -112,13 +112,6 @@ public enum MediaPickerModalPresentationStyle
     OverFullScreen
 }
 
-public enum MultiPickerBarStyle
-{
-    Default = 0,
-    Black = 1,
-    BlackTranslucent = 2
-}
-
 /// <summary>
 /// Video quality
 /// </summary>

@@ -16,7 +16,19 @@
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 
 		<DefineConstants Condition="$(TargetFramework.Contains('ios')) OR $(TargetFramework.Contains('maccatalyst'))">$(DefineConstants);MACIOS</DefineConstants>
-		<!--<DefineConstants Condition="$(TargetFramework.Contains('ios'))">$(DefineConstants);MACIOS</DefineConstants>-->
+
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Title>MPowerKit.MediaPlugin</Title>
+		<Version>1.0.0</Version>
+		<Authors>MPowerKit,Alex Dobrynin</Authors>
+		<Description>MAUI library to take or pick photos and videos from a cross-platform API</Description>
+		<Copyright>MPowerKit</Copyright>
+		<PackageProjectUrl>https://github.com/MPowerKit/MediaPlugin</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/MPowerKit/MediaPlugin</RepositoryUrl>
+		<PackageTags>maui;media;photo;video;plugin;cross</PackageTags>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<PackageReadmeFile>readme.md</PackageReadmeFile>
+		<PackageIcon>icon.png</PackageIcon>
 	</PropertyGroup>
 
 	<ItemGroup Condition="!$(TargetFramework.Contains('android'))">
@@ -43,8 +55,27 @@
 		<None Include="**\**\Windows\**\*.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
 	</ItemGroup>
 
+	<ItemGroup Condition="$(TargetFramework.Contains('android'))">
+		<AndroidResource Include="Resources\xml\*.xml" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\icon.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\LICENSE">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\readme.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
 	</ItemGroup>
 
 </Project>

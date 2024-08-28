@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Text.RegularExpressions;
-
 using Android;
 using Android.App;
 using Android.Content;
@@ -15,16 +12,6 @@ using Uri = Android.Net.Uri;
 
 namespace MPowerKit.MediaPlugin;
 
-[ContentProvider(["${applicationId}" + Authority], Name = "MPowerKit.MediaPlugin.MediaFileProvider", Exported = false, GrantUriPermissions = true)]
-[MetaData("android.support.FILE_PROVIDER_PATHS", Resource = "@xml/file_provider_paths")]
-public class MediaFileProvider : FileProvider
-{
-    internal const string Authority = ".fileprovider";
-
-    internal static Uri GetUriForFile(Context context, Java.IO.File file)
-        => GetUriForFile(context, context.PackageName! + Authority, file)!;
-}
-
 public class State
 {
     public int RequestId { get; set; }
@@ -38,13 +25,8 @@ public class State
 /// <summary>
 /// Implementation for Feature
 /// </summary>
-public partial class MediaImplementation : IMedia
+public class MediaImplementation : IMedia
 {
-    protected const string IllegalCharacters = "[|\\?*<\":>/']";
-
-    [GeneratedRegex(IllegalCharacters)]
-    private static partial Regex IllegalCharactersRegex();
-
     protected Context Context { get; set; }
 
     protected int RequestId { get; set; }
@@ -76,7 +58,18 @@ public partial class MediaImplementation : IMedia
         Context = Android.App.Application.Context;
         IsCameraAvailable = Context.PackageManager!.HasSystemFeature(PackageManager.FeatureCamera)
             || Context.PackageManager.HasSystemFeature(PackageManager.FeatureCameraFront);
+
+        OnActivityResultHandler += OnActivityResult;
     }
+
+    protected static event Action<int, Result, Intent?> OnActivityResultHandler;
+
+    public static void SendActivityResult(int requestCode, Result resultCode, Intent? data)
+    {
+        OnActivityResultHandler?.Invoke(requestCode, resultCode, data);
+    }
+
+    public virtual Task<bool> Initialize() => Task.FromResult(true);
 
     protected virtual int GetRequestId()
     {
@@ -121,7 +114,7 @@ public partial class MediaImplementation : IMedia
 
         request ??= new CaptureRequest();
 
-        VerifyCaptureRequest(request);
+        request.VerifyCaptureRequest();
 
         var medias = await TakeMediasAsync(true, request, null, token);
 
@@ -151,7 +144,7 @@ public partial class MediaImplementation : IMedia
 
         request ??= new CaptureRequest();
 
-        VerifyCaptureRequest(request);
+        request.VerifyCaptureRequest();
 
         var medias = await TakeMediasAsync(false, request, null, token);
 
@@ -294,7 +287,7 @@ public partial class MediaImplementation : IMedia
         }
     }
 
-    public void OnActivityResult(int requestCode, Result resultCode, Intent? data)
+    protected virtual void OnActivityResult(int requestCode, Result resultCode, Intent? data)
     {
         if (State is null || State.RequestId != requestCode) return;
 
@@ -561,17 +554,12 @@ public partial class MediaImplementation : IMedia
     {
         subdir = string.IsNullOrWhiteSpace(subdir) ? string.Empty : subdir;
 
-        Uri uri;
-
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
-            name = isPhoto ? $"IMG_{timestamp}.jpg" : $"VID_{timestamp}.mp4";
-        }
+        name = Path.GetFileName(MediaExtensions.GetDesiredPath(subdir, name, isPhoto));
 
         var mediaType = isPhoto ? Environment.DirectoryPictures : Environment.DirectoryMovies;
         var directory = context.GetExternalFilesDir(mediaType);
 
+        string storePath;
         if (OperatingSystem.IsAndroidVersionAtLeast(29))
         {
             using var mediaStorageDir = new Java.IO.File(directory, subdir);
@@ -582,7 +570,7 @@ public partial class MediaImplementation : IMedia
             using var nomedia = new Java.IO.File(mediaStorageDir, ".nomedia");
             nomedia.CreateNewFile();
 
-            uri = Uri.FromFile(new Java.IO.File(GetUniquePath(mediaStorageDir.Path, name, isPhoto)))!;
+            storePath = mediaStorageDir.Path;
         }
         else
         {
@@ -598,25 +586,10 @@ public partial class MediaImplementation : IMedia
                 nomedia.CreateNewFile();
             }
 
-            uri = Uri.FromFile(new Java.IO.File(GetUniquePath(mediaStorageDir.Path, name, isPhoto)))!;
+            storePath = mediaStorageDir.Path;
         }
 
-        return uri;
-    }
-
-    protected static string GetUniquePath(string folder, string name, bool isPhoto)
-    {
-        var ext = Path.GetExtension(name);
-        if (string.IsNullOrWhiteSpace(ext)) ext = isPhoto ? ".jpg" : ".mp4";
-
-        name = Path.GetFileNameWithoutExtension(name);
-
-        var nname = name + ext;
-        var i = 1;
-        while (File.Exists(Path.Combine(folder, nname)))
-            nname = name + "_" + i++ + ext;
-
-        return Path.Combine(folder, nname);
+        return Uri.FromFile(new Java.IO.File(MediaExtensions.GetUniquePath(storePath, name, isPhoto)))!;
     }
 
     protected virtual void DeleteOutputFile(Uri? path)
@@ -722,20 +695,6 @@ public partial class MediaImplementation : IMedia
             Console.Write("Unable to check manifest for permission: " + ex);
         }
         return false;
-    }
-
-    protected virtual void VerifyCaptureRequest(CaptureRequest request)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        if (Path.IsPathRooted(request.DesiredDirectory))
-            throw new ArgumentException("options.Directory must be a relative path", nameof(request));
-
-        if (!string.IsNullOrWhiteSpace(request.DesiredName))
-            request.DesiredName = IllegalCharactersRegex().Replace(request.DesiredName, string.Empty).Replace(@"\", string.Empty);
-
-        if (!string.IsNullOrWhiteSpace(request.DesiredDirectory))
-            request.DesiredDirectory = IllegalCharactersRegex().Replace(request.DesiredDirectory, string.Empty).Replace(@"\", string.Empty);
     }
 
     protected virtual int GetVideoQuality(VideoQuality videoQuality)

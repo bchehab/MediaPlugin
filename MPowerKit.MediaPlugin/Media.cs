@@ -21,23 +21,19 @@ public static class Media
 
     static IMedia CreateMedia()
     {
-#if ANDROID || MACIOS
+#if ANDROID || MACIOS || WINDOWS
         return new MediaImplementation();
-        //#elif WINDOWS
-        //return Flags.Contains(FeatureFlags.WindowsUseNewMediaImplementation)
-        //? (IMedia)new NewMediaImplementation()
-        //: new MediaImplementation();
 #else
         throw new NotImplementedException("MediaPlugin is not implemented for current platform");
 #endif
     }
 
-    public static MauiAppBuilder UseMediaPlugin(this MauiAppBuilder builder)
+    public static MauiAppBuilder UseMpowerKitMediaPlugin(this MauiAppBuilder builder)
     {
-        return UseMediaPlugin(builder, false);
+        return UseMpowerKitMediaPlugin(builder, false);
     }
 
-    public static MauiAppBuilder UseMediaPlugin(this MauiAppBuilder builder, bool registerInterface)
+    public static MauiAppBuilder UseMpowerKitMediaPlugin(this MauiAppBuilder builder, bool registerInterface)
     {
         if (registerInterface)
         {
@@ -51,8 +47,7 @@ public static class Media
             {
                 android.OnActivityResult((activity, requestCode, resultCode, data) =>
                 {
-                    var media = registerInterface ? IPlatformApplication.Current!.Services.GetService<IMedia>() : Current;
-                    media!.OnActivityResult(requestCode, resultCode, data);
+                    MediaImplementation.SendActivityResult(requestCode, resultCode, data);
                 });
             });
         });

@@ -30,43 +30,51 @@ public interface IMedia
     /// </summary>
     bool IsPickVideoSupported { get; }
 
+    Task<bool> Initialize();
+
     /// <summary>
     /// Picks a photo from the default gallery
     /// </summary>
     /// <param name="token">Cancellation token</param>
-    /// <returns>Media file or null if canceled</returns>
+    /// <param name="request">Pick Photos Request</param>
+    /// <returns>Media file</returns>
+    /// <exception cref="OperationCanceledException">Thrown when the operation is canceled by user.</exception>
     Task<MediaFile?> PickPhotoAsync(PickRequest? request = null, CancellationToken token = default);
 
     /// <summary>
-    /// Picks a photo from the default gallery
+    /// Picks multiple photos from the default gallery
     /// </summary>
-    /// <returns>Media file or null if canceled</returns>
+    /// <param name="request">Pick Photos Request</param>
+    /// <param name="multiOptions">Options for picking multiple photos</param>
+    /// <param name="token">Cancellation token</param>
+    /// <returns>Media files</returns>
+    /// <exception cref="OperationCanceledException">Thrown when the operation is canceled by user.</exception>
     Task<List<MediaFile>?> PickPhotosAsync(PickRequest? request = null, MultiPickerOptions? multiOptions = null, CancellationToken token = default);
 
     /// <summary>
-    /// Take a photo async with specified options
+    /// Takes a photo
     /// </summary>
     /// <param name="request">Camera Photo Request</param>
     /// <param name="token">Cancellation token</param>
-    /// <returns>Media file of photo or null if canceled</returns>
+    /// <returns>Media file of photo</returns>
+    /// <exception cref="OperationCanceledException">Thrown when the operation is canceled by user.</exception>
     Task<MediaFile?> TakePhotoAsync(CaptureRequest? request = null, CancellationToken token = default);
 
     /// <summary>
     /// Picks a video from the default gallery
     /// </summary>
+    /// <param name="request">Pick Video Request</param>
     /// <param name="token">Cancellation token</param>
     /// <returns>Media file of video or null if canceled</returns>
+    /// <exception cref="OperationCanceledException">Thrown when the operation is canceled by user.</exception>
     Task<MediaFile?> PickVideoAsync(VideoPickRequest? request = null, CancellationToken token = default);
 
     /// <summary>
-    /// Take a video with specified options
+    /// Takes a video
     /// </summary>
     /// <param name="request">Camera Video Request</param>
     /// <param name="token">Cancellation token</param>
-    /// <returns>Media file of new video or null if canceled</returns>
+    /// <returns>Media file of new video</returns>
+    /// <exception cref="OperationCanceledException">Thrown when the operation is canceled by user.</exception>
     Task<MediaFile?> TakeVideoAsync(CaptureRequest? request = null, CancellationToken token = default);
-
-#if ANDROID
-    void OnActivityResult(int requestCode, Android.App.Result resultCode, Android.Content.Intent? data);
-#endif
 }
