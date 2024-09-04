@@ -362,12 +362,11 @@ public class PHPickerDelegate : PHPickerViewControllerDelegate
 
     public override async void DidFinishPicking(PHPickerViewController picker, PHPickerResult[] results)
     {
-        await picker.DismissViewControllerAsync(true);
-
         var tcs = State.Tcs;
 
         if (results?.Length is null or 0)
         {
+            await picker.DismissViewControllerAsync(true);
             tcs.TrySetCanceled();
             return;
         }
@@ -414,6 +413,8 @@ public class PHPickerDelegate : PHPickerViewControllerDelegate
                 files.Add(mediaFile);
             }
 
+            await picker.DismissViewControllerAsync(true);
+
             if (files.Count == 0)
             {
                 tcs.TrySetCanceled();
@@ -422,6 +423,8 @@ public class PHPickerDelegate : PHPickerViewControllerDelegate
         }
         catch (Exception ex)
         {
+            await picker.DismissViewControllerAsync(true);
+
             tcs.TrySetException(ex);
         }
     }
