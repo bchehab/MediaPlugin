@@ -229,7 +229,7 @@ public class MediaImplementation : IMedia
                     State.Controller = new UIImagePickerController
                     {
                         SourceType = UIImagePickerControllerSourceType.Camera,
-                        AllowsEditing = true,
+                        AllowsEditing = !isPhoto,
                         MediaTypes = [isPhoto ? TypeImage : TypeMovie],
                         CameraDevice = GetUICameraDevice(captureRequest.DefaultCamera),
                         Delegate = new PhotoPickerDelegate(State, captureRequest),
