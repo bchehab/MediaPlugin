@@ -2,13 +2,13 @@ using Foundation;
 
 using ImageIO;
 
-using MobileCoreServices;
-
 using Photos;
 
 using PhotosUI;
 
 using UIKit;
+
+using UniformTypeIdentifiers;
 
 using Permissions = Microsoft.Maui.ApplicationModel.Permissions;
 using PermissionStatus = Microsoft.Maui.ApplicationModel.PermissionStatus;
@@ -362,15 +362,18 @@ public class PHPickerDelegate : PHPickerViewControllerDelegate
 
     public override async void DidFinishPicking(PHPickerViewController picker, PHPickerResult[] results)
     {
+        await picker.DismissViewControllerAsync(true);
+
+        var tcs = State.Tcs;
+
         if (results?.Length is null or 0)
         {
-            picker.DismissViewController(true, null);
-
-            State.Tcs.TrySetCanceled();
+            tcs.TrySetCanceled();
             return;
         }
 
         List<MediaFile> files = new(results.Length);
+
         try
         {
             foreach (var res in results)
@@ -385,59 +388,51 @@ public class PHPickerDelegate : PHPickerViewControllerDelegate
 
                 if (type is null) continue;
 
-                try
+                TaskCompletionSource<string> localTcs = new();
+                provider.LoadFileRepresentation(type, (url, err) =>
                 {
-                    var localTcs = new TaskCompletionSource<string>();
-                    provider.LoadFileRepresentation(type, (url, err) =>
+                    if (err is not null)
                     {
-                        if (err is not null)
-                        {
-                            localTcs.SetException(new NSErrorException(err));
-                            return;
-                        }
+                        localTcs.SetException(new NSErrorException(err));
+                        return;
+                    }
 
-                        var newPath = MediaExtensions.GetUniquePath(FileSystem.Current.AppDataDirectory, url.LastPathComponent!, true);
+                    var newPath = MediaExtensions.GetUniquePath(FileSystem.Current.AppDataDirectory, url.LastPathComponent!, true);
 
-                        using var rs = File.OpenRead(url.Path!);
-                        using var ws = File.OpenWrite(newPath);
-                        rs.CopyTo(ws);
+                    using var rs = File.OpenRead(url.Path!);
+                    using var ws = File.OpenWrite(newPath);
+                    rs.CopyTo(ws);
 
-                        localTcs.SetResult(newPath);
-                    });
+                    localTcs.SetResult(newPath);
+                });
 
-                    var path = await localTcs.Task;
+                var path = await localTcs.Task;
 
-                    var url = NSUrl.FromFilename(path);
+                var url = NSUrl.FromFilename(path);
 
-                    var mediaFile = new MediaFile(path, () => File.OpenRead(path), null, url.AbsoluteString, url.LastPathComponent);
-                    files.Add(mediaFile);
-                }
-                catch (Exception ex)
-                {
-                    State.Tcs.TrySetException(ex);
-                    return;
-                }
+                var mediaFile = new MediaFile(path, () => File.OpenRead(path), null, url.AbsoluteString, url.LastPathComponent);
+                files.Add(mediaFile);
             }
-        }
-        finally
-        {
-            picker.DismissViewController(true, null);
-        }
 
-        if (files.Count == 0)
-        {
-            State!.Tcs.TrySetCanceled();
+            if (files.Count == 0)
+            {
+                tcs.TrySetCanceled();
+            }
+            else tcs.TrySetResult(files);
         }
-        else State!.Tcs.TrySetResult(files);
+        catch (Exception ex)
+        {
+            tcs.TrySetException(ex);
+        }
     }
 
     protected virtual string? GetIdentifier(string[] identifiers)
     {
         if (identifiers?.Length is null or 0) return null;
-        if (identifiers.Any(i => i.StartsWith(UTType.LivePhoto)) && identifiers.Contains(UTType.JPEG))
-            return identifiers.FirstOrDefault(i => i == UTType.JPEG);
-        if (identifiers.Contains(UTType.QuickTimeMovie))
-            return identifiers.FirstOrDefault(i => i == UTType.QuickTimeMovie);
+        if (identifiers.Any(i => i.StartsWith(UTTypes.LivePhoto.Identifier)) && identifiers.Contains(UTTypes.Jpeg.Identifier))
+            return identifiers.FirstOrDefault(i => i == UTTypes.Jpeg.Identifier);
+        if (identifiers.Contains(UTTypes.QuickTimeMovie.Identifier))
+            return identifiers.FirstOrDefault(i => i == UTTypes.QuickTimeMovie.Identifier);
         return identifiers.FirstOrDefault();
     }
 }
@@ -475,9 +470,9 @@ public class PhotoPickerDelegate : UIImagePickerControllerDelegate
         Request = request;
     }
 
-    public override void FinishedPickingMedia(UIImagePickerController picker, NSDictionary info)
+    public override async void FinishedPickingMedia(UIImagePickerController picker, NSDictionary info)
     {
-        picker.DismissViewController(true, null);
+        await picker.DismissViewControllerAsync(true);
 
         if (info is null)
         {
@@ -503,9 +498,9 @@ public class PhotoPickerDelegate : UIImagePickerControllerDelegate
         }
     }
 
-    public override void Canceled(UIImagePickerController picker)
+    public override async void Canceled(UIImagePickerController picker)
     {
-        picker.DismissViewController(true, null);
+        await picker.DismissViewControllerAsync(true);
 
         State.Tcs?.SetCanceled();
     }
