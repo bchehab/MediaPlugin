@@ -19,7 +19,7 @@
 
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title>MPowerKit.MediaPlugin</Title>
-		<Version>1.0.1</Version>
+		<Version>1.0.2</Version>
 		<Authors>MPowerKit,Alex Dobrynin</Authors>
 		<Description>MAUI library to take or pick photos and videos from a cross-platform API</Description>
 		<Copyright>MPowerKit</Copyright>
