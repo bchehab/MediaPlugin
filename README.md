@@ -1,3 +1,5 @@
+# This is the .NET 9 version of the Media Plugin by MPowerKit/MediaPlugin: https://github.com/MPowerKit/MediaPlugin
+
 # MPowerKit.MediaPlugin
 
 Simple .NET MAUI cross platform plugin to take photos and video or pick them from a gallery.
