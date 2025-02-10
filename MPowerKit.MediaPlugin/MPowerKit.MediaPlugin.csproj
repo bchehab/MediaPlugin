@@ -1,30 +1,31 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net8.0-android;net8.0-ios;net8.0-maccatalyst</TargetFrameworks>
-		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.22621.0</TargetFrameworks>
+		<TargetFrameworks>net9.0-android;net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
+		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net9.0-windows10.0.19041.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<UseMaui>true</UseMaui>
 		<SingleProject>true</SingleProject>
-		<MauiVersion>8.0.3</MauiVersion>
+		<MauiVersion>9.0.0</MauiVersion>
 
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">14.2</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">14.2</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">26.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 
 		<DefineConstants Condition="$(TargetFramework.Contains('ios')) OR $(TargetFramework.Contains('maccatalyst'))">$(DefineConstants);MACIOS</DefineConstants>
 
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Title>MPowerKit.MediaPlugin</Title>
-		<Version>1.0.2</Version>
-		<Authors>MPowerKit,Alex Dobrynin</Authors>
-		<Description>MAUI library to take or pick photos and videos from a cross-platform API</Description>
+		<Title>NET9-MPowerKit.MediaPlugin</Title>
+		<PackageId>NET9-MPowerKit.MediaPlugin</PackageId>
+		<Version>1.0.0</Version>
+		<Authors>Bilal Chehab</Authors>
+		<Description>.NET 9 version of: MPowerKit,Alex Dobrynin's MAUI library to take or pick photos and videos from a cross-platform API</Description>
 		<Copyright>MPowerKit</Copyright>
-		<PackageProjectUrl>https://github.com/MPowerKit/MediaPlugin</PackageProjectUrl>
-		<RepositoryUrl>https://github.com/MPowerKit/MediaPlugin</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/bchehab/MediaPlugin</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/bchehab/MediaPlugin</RepositoryUrl>
 		<PackageTags>maui;media;photo;video;plugin;cross</PackageTags>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<PackageReadmeFile>readme.md</PackageReadmeFile>
